@@ -1,0 +1,39 @@
+services:
+  certgen:
+    build:
+      context: .
+      dockerfile: docker/certgen.Dockerfile
+    volumes:
+      - certs:/certs
+
+  upstream:
+    build:
+      context: .
+      dockerfile: docker/upstream.Dockerfile
+    depends_on:
+      certgen:
+        condition: service_completed_successfully
+    env_file: [upstream.env]
+    volumes:
+      - certs:/certs:ro
+    networks: [internal]
+
+  proxy:
+    build:
+      context: .
+      dockerfile: docker/proxy.Dockerfile
+    depends_on:
+      certgen:
+        condition: service_completed_successfully
+    env_file: [proxy.env]
+    ports:
+      - "8443:8443"
+    volumes:
+      - certs:/certs:ro
+    networks: [internal]
+
+volumes:
+  certs:
+
+networks:
+  internal:
